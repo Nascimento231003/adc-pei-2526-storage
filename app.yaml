@@ -1,0 +1,6 @@
+runtime: java21
+automatic_scaling:
+  min_idle_instances: 0
+inbound_services:
+- warmup
+auto_id_policy: default

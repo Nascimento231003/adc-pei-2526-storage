@@ -18,7 +18,16 @@ public class RegisterData {
 	}
 
     public boolean validRegistration(){
-        return password.equals(confirmation);
+        return password != null
+        && username != null
+        && !username.isBlank()
+        && confirmation != null
+        && phone != null
+        && !phone.isBlank()
+        && address != null
+        && !address.isBlank()
+        && password.equals(confirmation)
+        && role != null;
     }
 	
 } 
