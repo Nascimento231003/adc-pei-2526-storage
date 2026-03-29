@@ -19,6 +19,7 @@ public class RegisterData {
 
     public boolean validRegistration(){
         return password != null
+        && !password.isBlank()
         && username != null
         && !username.isBlank()
         && confirmation != null

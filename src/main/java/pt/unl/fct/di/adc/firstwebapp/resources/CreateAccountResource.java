@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import pt.unl.fct.di.adc.firstwebapp.model.ErrorCode;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
+import pt.unl.fct.di.adc.firstwebapp.model.ApiRequest;
 import pt.unl.fct.di.adc.firstwebapp.model.Role;
 import pt.unl.fct.di.adc.firstwebapp.results.CreateAccountResult;
 import pt.unl.fct.di.adc.firstwebapp.util.RegisterData;
@@ -37,19 +38,16 @@ public class CreateAccountResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response createAccount(RegisterData data) {
+    public Response createAccount(ApiRequest<RegisterData> req) {
+        RegisterData data = (req == null) ? null : req.input;
         
-        if (data == null) {
+        if (data == null || data.validRegistration()) {
             return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.INVALID_INPUT)),
                     MediaType.APPLICATION_JSON
             ).build();
         }
 
-        if(!data.validRegistration()){
-            String json = g.toJson(ApiResponse.error (ErrorCode.INVALID_INPUT));
-            return Response.ok(json, MediaType.APPLICATION_JSON).build();
-        }
         Transaction txn = null;
         try {
             txn = datastore.newTransaction();

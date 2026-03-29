@@ -12,4 +12,10 @@ public class LoginData {
 		this.password = password;
 	}
 	
+	public boolean validLogin(){
+        return password != null
+        && !password.isBlank()
+        && username != null
+        && !username.isBlank();
+    }
 }

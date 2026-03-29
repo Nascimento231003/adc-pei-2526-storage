@@ -14,8 +14,10 @@ import jakarta.ws.rs.core.Response;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.util.AuthToken;
 import pt.unl.fct.di.adc.firstwebapp.util.LoginData;
+import pt.unl.fct.di.adc.firstwebapp.util.RegisterData;
 import pt.unl.fct.di.adc.firstwebapp.model.ErrorCode;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
+import pt.unl.fct.di.adc.firstwebapp.model.ApiRequest;
 import pt.unl.fct.di.adc.firstwebapp.model.Role;
 import pt.unl.fct.di.adc.firstwebapp.results.LoginResult;
 
@@ -48,9 +50,10 @@ public class LoginResource {
 	@Path("/")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response doLogin(LoginData data) {
+	public Response doLogin(ApiRequest<LoginData> req) {
+		LoginData data = (req == null) ? null : req.input;
 
-		if (data == null) {
+		if (data == null || !data.validLogin()) {
             return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.INVALID_INPUT)),
                     MediaType.APPLICATION_JSON
@@ -84,7 +87,7 @@ public class LoginResource {
 			Role role = Role.valueOf(account.getString("role"));
 
 			AuthToken at = new AuthToken(data.username, role); 
-			
+
 			Key sessionKey = datastore.newKeyFactory()
                     .setKind("AuthSession")
                     .newKey(at.tokenId);
@@ -105,13 +108,13 @@ public class LoginResource {
             ).build();
 
 		}catch (DatastoreException e) {
-            LOG.log(Level.SEVERE, "Datastore error on createaccount", e);
+            LOG.log(Level.SEVERE, "Datastore error on login", e);
             return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.FORBIDDEN)),
                     MediaType.APPLICATION_JSON
             ).build();
         } catch (RuntimeException e) {
-            LOG.log(Level.SEVERE, "Unexpected error on createaccount", e);
+            LOG.log(Level.SEVERE, "Unexpected error on login", e);
             return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.FORBIDDEN)),
                     MediaType.APPLICATION_JSON
