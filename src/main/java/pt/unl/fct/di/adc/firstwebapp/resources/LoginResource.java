@@ -1,5 +1,6 @@
 package pt.unl.fct.di.adc.firstwebapp.resources;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import jakarta.ws.rs.Consumes;
@@ -10,9 +11,21 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
+import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.util.AuthToken;
 import pt.unl.fct.di.adc.firstwebapp.util.LoginData;
+import pt.unl.fct.di.adc.firstwebapp.model.ErrorCode;
+import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
+import pt.unl.fct.di.adc.firstwebapp.model.Role;
+import pt.unl.fct.di.adc.firstwebapp.results.LoginResult;
+
+import com.google.appengine.repackaged.org.apache.commons.codec.digest.DigestUtils;
+import com.google.cloud.datastore.Transaction;
+import com.google.cloud.datastore.Datastore;
+import com.google.cloud.datastore.DatastoreException;
+import com.google.cloud.datastore.DatastoreOptions;
+import com.google.cloud.datastore.Key;
+import com.google.cloud.datastore.Entity;
 
 import com.google.gson.Gson;
 
@@ -27,32 +40,87 @@ public class LoginResource {
 	private static final Logger LOG = Logger.getLogger(LoginResource.class.getName());
 
 	private final Gson g = new Gson();
+    private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
 	
 	public LoginResource() {} // Nothing to be done here
 	
 	@POST
 	@Path("/")
 	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
 	public Response doLogin(LoginData data) {
-		LOG.fine("Attempt to login user: " + data.username);
 
-		if(data.username.equals("jleitao") && data.password.equals("password")) {
-			AuthToken at = new AuthToken(data.username);
-			return Response.ok(g.toJson(at)).build();
-		}
+		if (data == null) {
+            return Response.ok(
+                    g.toJson(ApiResponse.error(ErrorCode.INVALID_INPUT)),
+                    MediaType.APPLICATION_JSON
+            ).build();
+        }
 
-		return Response.status(Response.Status.FORBIDDEN).entity("Incorrect username or password.").build();
+		Transaction txn = null;
+
+		try {
+			txn = datastore.newTransaction();
+			Key userKey = datastore.newKeyFactory().setKind("Account").newKey(data.username);
+			Entity account = txn.get(userKey);
+
+			if (account == null) {
+				return Response.ok(
+					g.toJson(ApiResponse.error(ErrorCode.USER_NOT_FOUND)),
+					MediaType.APPLICATION_JSON
+				).build();
+			}
+
+			String storedhash = account.getString("passwordHash");
+			String givenhash = DigestUtils.sha512Hex(data.password);
+
+			if (!storedhash.equals(givenhash)){
+				return Response.ok(
+					g.toJson(ApiResponse.error(ErrorCode.INVALID_CREDENTIALS)),
+					MediaType.APPLICATION_JSON
+				).build();
+			}
+
+			Role role = Role.valueOf(account.getString("role"));
+
+			AuthToken at = new AuthToken(data.username, role); 
+			
+			Key sessionKey = datastore.newKeyFactory()
+                    .setKind("AuthSession")
+                    .newKey(at.tokenId);
+				
+			Entity session  = Entity.newBuilder(sessionKey)
+                    .set("username", at.username)
+                    .set("role", at.role.name())
+                    .set("issuedAt", at.issuedAt)
+                    .set("expiresAt", at.expiresAt)
+                    .build();
+
+            txn.put(session);   
+            txn.commit();
+
+			return Response.ok(
+                    g.toJson(ApiResponse.success(new LoginResult(at))),
+                    MediaType.APPLICATION_JSON
+            ).build();
+
+		}catch (DatastoreException e) {
+            LOG.log(Level.SEVERE, "Datastore error on createaccount", e);
+            return Response.ok(
+                    g.toJson(ApiResponse.error(ErrorCode.FORBIDDEN)),
+                    MediaType.APPLICATION_JSON
+            ).build();
+        } catch (RuntimeException e) {
+            LOG.log(Level.SEVERE, "Unexpected error on createaccount", e);
+            return Response.ok(
+                    g.toJson(ApiResponse.error(ErrorCode.FORBIDDEN)),
+                    MediaType.APPLICATION_JSON
+            ).build();
 		
-	}
-	
-	@GET
-	@Path("/{username}")
-	public Response checkUsernameAvailable(@PathParam("username") String username) {
-		if(username.trim().equals("jleitao")) {
-			return Response.ok().entity(g.toJson(false)).build();
-		} else {
-			return Response.ok().entity(g.toJson(true)).build();
+		}finally{
+			if (txn != null && txn.isActive()) {
+				txn.rollback();
+			}
 		}
 	}
-
 }

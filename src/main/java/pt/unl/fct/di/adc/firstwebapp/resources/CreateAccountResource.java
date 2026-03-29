@@ -50,16 +50,15 @@ public class CreateAccountResource {
             String json = g.toJson(ApiResponse.error (ErrorCode.INVALID_INPUT));
             return Response.ok(json, MediaType.APPLICATION_JSON).build();
         }
-
-         Transaction txn = datastore.newTransaction();
+        Transaction txn = null;
         try {
+            txn = datastore.newTransaction();
             Key userKey = datastore.newKeyFactory()
                     .setKind("Account")
                     .newKey(data.username);
 
-            Entity existing = txn.get(userKey); // IMPORTANT: read inside txn
+            Entity existing = txn.get(userKey); 
             if (existing != null) {
-                txn.rollback();
                 return Response.ok(
                         g.toJson(ApiResponse.error(ErrorCode.USER_ALREADY_EXISTS)),
                         MediaType.APPLICATION_JSON
@@ -97,8 +96,8 @@ public class CreateAccountResource {
                     MediaType.APPLICATION_JSON
             ).build();
         } finally {
-            if (txn.isActive()) {
-                txn.rollback(); // IMPORTANT: never forget
+            if (txn != null && txn.isActive()) {
+                txn.rollback(); 
             }
         }
     }
