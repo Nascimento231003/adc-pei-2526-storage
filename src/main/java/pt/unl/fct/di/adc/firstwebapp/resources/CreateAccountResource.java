@@ -19,8 +19,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import pt.unl.fct.di.adc.firstwebapp.model.ErrorCode;
-import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiRequest;
+import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.model.Role;
 import pt.unl.fct.di.adc.firstwebapp.results.CreateAccountResult;
 import pt.unl.fct.di.adc.firstwebapp.util.RegisterData;
@@ -41,7 +41,7 @@ public class CreateAccountResource {
     public Response createAccount(ApiRequest<RegisterData> req) {
         RegisterData data = (req == null) ? null : req.input;
         
-        if (data == null || data.validRegistration()) {
+        if (data == null || !data.validRegistration()) {
             return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.INVALID_INPUT)),
                     MediaType.APPLICATION_JSON

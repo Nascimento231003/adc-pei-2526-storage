@@ -11,13 +11,12 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import pt.unl.fct.di.adc.firstwebapp.model.ApiRequest;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.util.AuthToken;
 import pt.unl.fct.di.adc.firstwebapp.util.LoginData;
-import pt.unl.fct.di.adc.firstwebapp.util.RegisterData;
 import pt.unl.fct.di.adc.firstwebapp.model.ErrorCode;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
-import pt.unl.fct.di.adc.firstwebapp.model.ApiRequest;
 import pt.unl.fct.di.adc.firstwebapp.model.Role;
 import pt.unl.fct.di.adc.firstwebapp.results.LoginResult;
 
