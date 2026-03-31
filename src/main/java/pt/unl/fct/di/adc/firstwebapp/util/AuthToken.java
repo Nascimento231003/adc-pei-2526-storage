@@ -22,9 +22,4 @@ public class AuthToken {
 		this.expiresAt = this.issuedAt + EXPIRATION_TIME;
 		this.role = role;
 	}
-
-	public boolean isValid() {
-		return issuedAt <= System.currentTimeMillis() && System.currentTimeMillis() <= expiresAt;
-	}
-	
 }
