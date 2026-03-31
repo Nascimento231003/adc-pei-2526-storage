@@ -4,7 +4,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -16,7 +15,6 @@ import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.util.AuthToken;
 import pt.unl.fct.di.adc.firstwebapp.util.LoginData;
 import pt.unl.fct.di.adc.firstwebapp.model.ErrorCode;
-import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.model.Role;
 import pt.unl.fct.di.adc.firstwebapp.results.LoginResult;
 
@@ -46,7 +44,6 @@ public class LoginResource {
 	public LoginResource() {} // Nothing to be done here
 	
 	@POST
-	@Path("/")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response doLogin(ApiRequest<LoginData> req) {

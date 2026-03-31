@@ -23,7 +23,7 @@ import jakarta.ws.rs.Produces;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiRequest;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.model.ErrorCode;
-import pt.unl.fct.di.adc.firstwebapp.results.LogoutResult;
+import pt.unl.fct.di.adc.firstwebapp.results.MessageResult;
 import pt.unl.fct.di.adc.firstwebapp.util.AuthToken;
 import pt.unl.fct.di.adc.firstwebapp.util.LogoutData;
 import com.google.cloud.datastore.Key;
@@ -52,12 +52,9 @@ public class LogoutResource {
             ).build();
         }
 
-        Transaction txn = null;
-
         try{
-            txn = datastore.newTransaction();
             Key tokenKey = datastore.newKeyFactory().setKind("AuthSession").newKey(token.tokenId);
-            Entity session = txn.get(tokenKey);
+            Entity session = datastore.get(tokenKey);
 
             String targetUsername = data.username;
 
@@ -97,7 +94,7 @@ public class LogoutResource {
             }
 
             return Response.ok(
-                    g.toJson(ApiResponse.success(new LogoutResult("Logout successful"))),
+                    g.toJson(ApiResponse.success(new MessageResult("Logout successful"))),
                     MediaType.APPLICATION_JSON
                 ).build();
 
@@ -114,10 +111,6 @@ public class LogoutResource {
                     MediaType.APPLICATION_JSON
             ).build();
 		
-		}finally{
-			if (txn != null && txn.isActive()) {
-				txn.rollback();
-			}
 		}
     }
 }
