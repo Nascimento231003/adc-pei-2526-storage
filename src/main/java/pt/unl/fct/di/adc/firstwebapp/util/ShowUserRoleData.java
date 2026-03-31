@@ -1,11 +1,11 @@
 package pt.unl.fct.di.adc.firstwebapp.util;
 
-public class DeleteData {
+public class ShowUserRoleData {
     public String username;
-    
-    public DeleteData () {}
 
-    public DeleteData (String username) {
+    public ShowUserRoleData() {}
+
+    public ShowUserRoleData(String username) {
         this.username = username;
     }
 }

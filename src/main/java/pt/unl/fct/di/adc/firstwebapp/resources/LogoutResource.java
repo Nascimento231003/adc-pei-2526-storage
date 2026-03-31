@@ -6,10 +6,6 @@ import java.util.logging.Level;
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.DatastoreException;
-import com.google.cloud.datastore.Transaction;
-import com.google.cloud.datastore.Query;
-import com.google.cloud.datastore.QueryResults;
-import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
 
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -43,9 +39,14 @@ public class LogoutResource {
         
 		LogoutData data = (req == null) ? null : req.input;
         AuthToken token = (req == null) ? null : req.token;
-        
-        if (data == null || data.username == null || data.username.isBlank()
-                || token == null || token.tokenId == null || token.tokenId.isBlank()) {
+
+        if (data == null || data.username == null || data.username.isBlank()) {
+            return Response.ok(
+                g.toJson(ApiResponse.error(ErrorCode.FORBIDDEN)), 
+                MediaType.APPLICATION_JSON
+            ).build();
+        } 
+        if (token == null || token.tokenId == null || token.tokenId.isBlank()) {
             return Response.ok(
                 g.toJson(ApiResponse.error(ErrorCode.INVALID_TOKEN)), 
                 MediaType.APPLICATION_JSON
@@ -62,7 +63,7 @@ public class LogoutResource {
                 return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.INVALID_TOKEN)),
                     MediaType.APPLICATION_JSON
-            ).build();
+                ).build();
             }
 
             long expiresAt = session.getLong("expiresAt");
@@ -70,7 +71,7 @@ public class LogoutResource {
                 return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.TOKEN_EXPIRED)),
                     MediaType.APPLICATION_JSON
-            ).build();
+                ).build();
             }
             String sessionUsername = session.getString("username");
             String sessionRole = session.getString("role");
@@ -82,16 +83,7 @@ public class LogoutResource {
                 ).build();
             }
 
-            Query<Entity> q = Query.newEntityQueryBuilder()
-                .setKind("AuthSession")
-                .setFilter(PropertyFilter.eq("username", targetUsername))
-                .build();
-
-            QueryResults<Entity> sessions = datastore.run(q);
-            while (sessions.hasNext()) {
-                Entity s = sessions.next();
-                datastore.delete(s.getKey());
-            }
+            datastore.delete(tokenKey);
 
             return Response.ok(
                     g.toJson(ApiResponse.success(new MessageResult("Logout successful"))),

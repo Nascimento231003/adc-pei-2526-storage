@@ -1,4 +1,4 @@
-package pt.unl.fct.di.adc.firstwebapp.rest;
+package pt.unl.fct.di.adc.firstwebapp.resources;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -7,7 +7,6 @@ import java.util.logging.Logger;
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;
 import com.google.cloud.datastore.DatastoreException;
-import com.google.cloud.datastore.Transaction;
 import com.google.cloud.datastore.Query;
 import com.google.cloud.datastore.QueryResults;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
@@ -26,14 +25,13 @@ import jakarta.ws.rs.POST;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiRequest;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.model.ErrorCode;
-import pt.unl.fct.di.adc.firstwebapp.resources.LogoutResource;
 import pt.unl.fct.di.adc.firstwebapp.results.MessageResult;
 import pt.unl.fct.di.adc.firstwebapp.util.AuthToken;
 import pt.unl.fct.di.adc.firstwebapp.util.DeleteData;
 
 @Path("/deleteaccount")
 public class DeleteAccountResource {
-     private static final Logger LOG = Logger.getLogger(DeleteAccountResource.class.getName());
+    private static final Logger LOG = Logger.getLogger(DeleteAccountResource.class.getName());
     private final Gson g = new Gson();
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
 
@@ -44,15 +42,19 @@ public class DeleteAccountResource {
         DeleteData data = (req == null) ? null : req.input;
         AuthToken token = (req == null) ? null : req.token;
 
-        if (data == null || data.username == null || data.username.isBlank()
-                || token == null || token.tokenId == null || token.tokenId.isBlank()) {
+        if (data == null || data.username == null || data.username.isBlank()) {
+            return Response.ok(
+                g.toJson(ApiResponse.error(ErrorCode.FORBIDDEN)), 
+                MediaType.APPLICATION_JSON
+            ).build();
+        }
+
+        if (token == null || token.tokenId == null || token.tokenId.isBlank()) {
             return Response.ok(
                 g.toJson(ApiResponse.error(ErrorCode.INVALID_TOKEN)), 
                 MediaType.APPLICATION_JSON
             ).build();
         }
-
-        Transaction txn = null;
 
         try{
             Key tokenKey = datastore.newKeyFactory().setKind("AuthSession").newKey(token.tokenId);

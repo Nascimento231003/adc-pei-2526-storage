@@ -1,4 +1,4 @@
-package pt.unl.fct.di.adc.firstwebapp.rest;
+package pt.unl.fct.di.adc.firstwebapp.resources;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +24,13 @@ import jakarta.ws.rs.core.Response;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiRequest;
 import pt.unl.fct.di.adc.firstwebapp.model.ApiResponse;
 import pt.unl.fct.di.adc.firstwebapp.model.ErrorCode;
-import pt.unl.fct.di.adc.firstwebapp.resources.ShowUsersResource;
-import pt.unl.fct.di.adc.firstwebapp.results.ShowAuthSessionsResult;
+import pt.unl.fct.di.adc.firstwebapp.results.ShowUsersResult;
 import pt.unl.fct.di.adc.firstwebapp.util.AuthToken;
-import pt.unl.fct.di.adc.firstwebapp.util.SessionInfo;
-import pt.unl.fct.di.adc.firstwebapp.util.ShowAuthSessionsData;
+import pt.unl.fct.di.adc.firstwebapp.util.ShowUsersData;
+import pt.unl.fct.di.adc.firstwebapp.util.UserInfo;
 
-@Path("/showauthsessions")
-public class ShowAuthenticatedSessionsResource {
+@Path("/showusers")
+public class ShowUsersResource {
     private static final Logger LOG = Logger.getLogger(ShowUsersResource.class.getName());
     private final Gson g = new Gson();
     private final Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
@@ -39,12 +38,12 @@ public class ShowAuthenticatedSessionsResource {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response showAuthSessions(ApiRequest<ShowAuthSessionsData> req) {
+    public Response showUsers(ApiRequest<ShowUsersData> req) {
         AuthToken token = (req == null) ? null : req.token;
 
         if (token == null || token.tokenId == null || token.tokenId.isBlank()) {
             return Response.ok(
-                g.toJson(ApiResponse.error(ErrorCode.INVALID_TOKEN)),
+                g.toJson(ApiResponse.error(ErrorCode.INVALID_TOKEN)), 
                 MediaType.APPLICATION_JSON
             ).build();
         }
@@ -53,7 +52,7 @@ public class ShowAuthenticatedSessionsResource {
             Key sessionKey = datastore.newKeyFactory().setKind("AuthSession").newKey(token.tokenId);
             Entity session = datastore.get(sessionKey);
 
-            if (session == null) {
+            if(session == null) {
                 return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.INVALID_TOKEN)),
                     MediaType.APPLICATION_JSON
@@ -69,48 +68,49 @@ public class ShowAuthenticatedSessionsResource {
             }
 
             String sessionRole = session.getString("role");
-            if (!sessionRole.equals("ADMIN")) {
+
+            if (sessionRole.equals("USER")) {
                 return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.UNAUTHORIZED)),
                     MediaType.APPLICATION_JSON
                 ).build();
             }
 
-            Query<Entity> query = Query.newEntityQueryBuilder()
-                    .setKind("AuthSession")
-                    .build();
+            Query<Entity> query = Query.newEntityQueryBuilder().setKind("Account").build();
 
-            QueryResults<Entity> results = datastore.run(query);
-            List<SessionInfo> sessions = new ArrayList<>();
+            QueryResults<Entity> results = datastore.run (query);
 
-            while (results.hasNext()) {
-                Entity s = results.next();
+            List<UserInfo> users = new ArrayList<>();
 
-                String tokenId = s.getKey().getName();
-                String username = s.getString("username");
-                String role = s.getString("role");
-                long sessionExpiresAt = s.getLong("expiresAt");
+            while(results.hasNext()) {
+                Entity account = results.next();
 
-                sessions.add(new SessionInfo(tokenId, username, role, sessionExpiresAt));
+                String username = account.contains("username") 
+                ? account.getString("username")
+                : account.getKey().getName();
+
+                String role = account.getString("role");
+
+                users.add(new UserInfo(username, role));
             }
 
             return Response.ok(
-                    g.toJson(ApiResponse.success(new ShowAuthSessionsResult(sessions))),
+                    g.toJson(ApiResponse.success(new ShowUsersResult(users))),
                     MediaType.APPLICATION_JSON
             ).build();
+
         }catch (DatastoreException e) {
-            LOG.log(Level.SEVERE, "Datastore error on showauthsessions", e);
+            LOG.log(Level.SEVERE, "Datastore error on showusers", e);
             return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.FORBIDDEN)),
                     MediaType.APPLICATION_JSON
             ).build();
         } catch (RuntimeException e) {
-            LOG.log(Level.SEVERE, "Unexpected error on showauthsessions", e);
+            LOG.log(Level.SEVERE, "Unexpected error on showusers", e);
             return Response.ok(
                     g.toJson(ApiResponse.error(ErrorCode.FORBIDDEN)),
                     MediaType.APPLICATION_JSON
             ).build();
         }
-
     }
 }
